@@ -2,7 +2,7 @@
 
 use std::time::Instant;
 
-use frontend::lexer::Lexer;
+use frontend::{find_mixed_and_invalid_indentations, lexer::Lexer, parse_session::ParseSession};
 
 mod frontend;
 
@@ -36,13 +36,14 @@ fn main() {
 
     let indent_kind = detect_indent_kind(&source_code);
 
-    #[cfg(debug_assertions)]
-    {
-        println!("indentation sequence: {:?}", indent_kind);
-        println!();
-    }
-
     let tokens = Lexer::tokenize(&source_code, indent_kind);
+
+    let mut parse_session = ParseSession::new(source_file_path.clone(), source_code, indent_kind);
+
+    find_mixed_and_invalid_indentations(&mut parse_session, &tokens);
+    if parse_session.has_errors() {
+        terminate_compilation(start_time, &parse_session, 1);
+    }
 
     #[cfg(debug_assertions)]
     {
@@ -55,10 +56,7 @@ fn main() {
         println!();
     }
 
-    println!(
-        "compilation finished in {:.6}s",
-        start_time.elapsed().as_secs_f32()
-    );
+    terminate_compilation(start_time, &parse_session, 0);
 }
 
 /// Looks up the source code line-by-line for a first non-empty (containing
@@ -110,4 +108,14 @@ fn detect_indent_kind(source_code: &String) -> IndentKind {
     // just default to 2 spaces. That's pretty standard. And beautiful. Everybody
     // should use 2 space indentations in their ML-like code.
     IndentKind::Spaces(2)
+}
+
+fn terminate_compilation(start_time: Instant, session: &ParseSession, exit_code: i32) {
+    println!(
+        "compilation finished with {} errors and {} warnings in {:.6}s",
+        session.error_count(),
+        session.warning_count(),
+        start_time.elapsed().as_secs_f32()
+    );
+    std::process::exit(exit_code);
 }
