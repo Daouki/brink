@@ -2,11 +2,18 @@
 
 use std::time::Instant;
 
+use frontend::lexer::Lexer;
+
+mod frontend;
+
+/// Holds information about the character sequence used to denote a block
+/// or continuation of a statement.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-enum IndentKind {
+pub enum IndentKind {
     Tab,
     Spaces(u8),
 }
+
 fn main() {
     println!("brink compiler v{}", env!("CARGO_PKG_VERSION"));
     println!();
@@ -27,12 +34,24 @@ fn main() {
         }
     };
 
+    let indent_kind = detect_indent_kind(&source_code);
+
     #[cfg(debug_assertions)]
     {
-        println!(
-            "Indentation sequence: {:#?}",
-            detect_indent_kind(&source_code)
-        );
+        println!("indentation sequence: {:?}", indent_kind);
+        println!();
+    }
+
+    let tokens = Lexer::tokenize(&source_code, indent_kind);
+
+    #[cfg(debug_assertions)]
+    {
+        for (index, token) in tokens.into_iter().enumerate() {
+            println!(
+                "{:>4}\t({}-{})\t\t{:?}",
+                index, token.span.0, token.span.1, token.kind
+            )
+        }
         println!();
     }
 
@@ -42,6 +61,16 @@ fn main() {
     );
 }
 
+/// Looks up the source code line-by-line for a first non-empty (containing
+/// at least single non-whitespace character), indented (starting with either
+/// a tab or sequence of spaces) line. The indentation mustn't be followed
+/// by a whitespace. If the indentation starts with an n number of tabs, then
+/// indentation kind is assumed to be using a single tab; if it starts with
+/// n number of spaces then the indentation kind is assumed to be that number
+/// of spaces.
+///
+/// Defaults to 2 spaces. Only true if no indentation was used in the entirety
+/// of the given source code or no validly indented line of code was found.
 fn detect_indent_kind(source_code: &String) -> IndentKind {
     for line in source_code.lines().into_iter() {
         if line.trim_start().is_empty() {
