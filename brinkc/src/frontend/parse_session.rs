@@ -1,42 +1,39 @@
-use crate::IndentKind;
+use crate::source_file::{SourceFile, SourceSpan};
 
 pub struct ParseSession {
-    source_file_path: String,
-    source_code: String,
-    indent_kind: IndentKind,
+    pub source_file: SourceFile,
     error_count: u32,
     warning_count: u32,
 }
 
 impl ParseSession {
-    pub fn new(source_file_path: String, source_code: String, indent_kind: IndentKind) -> Self {
+    pub fn new(source_file: SourceFile) -> Self {
         Self {
-            source_file_path,
-            source_code,
-            indent_kind,
+            source_file,
             error_count: 0,
             warning_count: 0,
         }
     }
 
-    /// Gets the type of indentation used in the source code.
-    pub fn indent_kind(&self) -> IndentKind {
-        self.indent_kind
-    }
-
-    pub fn error<S: AsRef<str>>(&mut self, span: (usize, usize), message: S) {
+    pub fn error<S: AsRef<str>>(&mut self, span: SourceSpan, message: S) {
         self.error_count += 1;
 
         eprintln!("error: {}", message.as_ref());
-        eprintln!(" -> {}:{}-{}", self.source_file_path, span.0, span.1);
+        eprintln!(
+            " -> {}:{}-{}",
+            self.source_file.file_path, span.start, span.end
+        );
         println!();
     }
 
-    pub fn warning<S: AsRef<str>>(&mut self, span: (usize, usize), message: S) {
+    pub fn warning<S: AsRef<str>>(&mut self, span: SourceSpan, message: S) {
         self.error_count += 1;
 
         eprintln!("warning: {}", message.as_ref());
-        eprintln!(" -> {}:{}-{}", self.source_file_path, span.0, span.1);
+        eprintln!(
+            " -> {}:{}-{}",
+            self.source_file.file_path, span.start, span.end
+        );
         println!();
     }
 

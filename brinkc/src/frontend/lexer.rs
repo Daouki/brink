@@ -1,6 +1,6 @@
 use std::{iter::Peekable, str::CharIndices};
 
-use crate::IndentKind;
+use crate::source_file::{IndentKind, SourceFile};
 
 use super::token::{self, Token, TokenKind};
 
@@ -24,7 +24,11 @@ pub struct Lexer<'a> {
 
 impl<'a> Lexer<'a> {
     /// Turns the given source code into a sequence of tokens.
-    pub fn tokenize(source_code: &'a str, indent_kind: IndentKind) -> Vec<Token> {
+    pub fn tokenize(source_file: &'a SourceFile) -> Vec<Token> {
+        Self::tokenize_source_code(&source_file.source_code, source_file.indent_kind)
+    }
+
+    pub fn tokenize_source_code(source_code: &'a str, indent_kind: IndentKind) -> Vec<Token> {
         let mut lexer = Self {
             source_code: source_code.char_indices().peekable(),
             indent_kind,
@@ -187,7 +191,7 @@ mod tests {
     fn ignores_whitespace() {
         // The lexer ignores all starting whitespaces on the first line of source code.
         let input = "   \t\t\r\r  \t";
-        let result = Lexer::tokenize(input, IndentKind::Tab);
+        let result = Lexer::tokenize_source_code(input, IndentKind::Tab);
 
         assert_eq!(1, result.len());
         assert_eq!(TokenKind::EndOfFile, result[0].kind);
@@ -196,7 +200,7 @@ mod tests {
     #[test]
     fn tokenizes_newline_using_spaces() {
         let input = "\n  \n  \n";
-        let result = Lexer::tokenize(input, IndentKind::Spaces(2))[1];
+        let result = Lexer::tokenize_source_code(input, IndentKind::Spaces(2))[1];
 
         assert_eq!(TokenKind::NewLine, result.kind);
     }
@@ -204,7 +208,7 @@ mod tests {
     #[test]
     fn tokenizes_indent_using_spaces() {
         let input = "\n  \n";
-        let result = Lexer::tokenize(input, IndentKind::Spaces(2))[0];
+        let result = Lexer::tokenize_source_code(input, IndentKind::Spaces(2))[0];
 
         assert_eq!(TokenKind::Indent, result.kind);
     }
@@ -212,7 +216,7 @@ mod tests {
     #[test]
     fn tokenizes_double_indent_using_spaces() {
         let input = "\n    \n";
-        let result = Lexer::tokenize(input, IndentKind::Spaces(2));
+        let result = Lexer::tokenize_source_code(input, IndentKind::Spaces(2));
 
         assert_eq!(TokenKind::Indent, result[0].kind);
         assert_eq!(TokenKind::Indent, result[1].kind);
@@ -221,7 +225,7 @@ mod tests {
     #[test]
     fn tokenizes_dedent_using_spaces() {
         let input = "\n  \n\n";
-        let result = Lexer::tokenize(input, IndentKind::Spaces(2))[1];
+        let result = Lexer::tokenize_source_code(input, IndentKind::Spaces(2))[1];
 
         assert_eq!(TokenKind::Dedent, result.kind);
     }
@@ -229,7 +233,7 @@ mod tests {
     #[test]
     fn tokenizes_double_dedent_using_spaces() {
         let input = "\n    \n\n";
-        let result = Lexer::tokenize(input, IndentKind::Spaces(2));
+        let result = Lexer::tokenize_source_code(input, IndentKind::Spaces(2));
 
         assert_eq!(TokenKind::Dedent, result[2].kind);
         assert_eq!(TokenKind::Dedent, result[3].kind);
@@ -238,7 +242,7 @@ mod tests {
     #[test]
     fn tokenizes_newline_using_tabs() {
         let input = "\n\t\n\t\n";
-        let result = Lexer::tokenize(input, IndentKind::Tab)[1];
+        let result = Lexer::tokenize_source_code(input, IndentKind::Tab)[1];
 
         assert_eq!(TokenKind::NewLine, result.kind);
     }
@@ -246,7 +250,7 @@ mod tests {
     #[test]
     fn tokenizes_indent_using_tabs() {
         let input = "\n\t\n";
-        let result = Lexer::tokenize(input, IndentKind::Tab)[0];
+        let result = Lexer::tokenize_source_code(input, IndentKind::Tab)[0];
 
         assert_eq!(TokenKind::Indent, result.kind);
     }
@@ -254,7 +258,7 @@ mod tests {
     #[test]
     fn tokenizes_double_indent_using_tabs() {
         let input = "\n\t\t\n";
-        let result = Lexer::tokenize(input, IndentKind::Tab);
+        let result = Lexer::tokenize_source_code(input, IndentKind::Tab);
 
         assert_eq!(TokenKind::Indent, result[0].kind);
         assert_eq!(TokenKind::Indent, result[1].kind);
@@ -263,7 +267,7 @@ mod tests {
     #[test]
     fn tokenizes_dedent_using_tabs() {
         let input = "\n\t\n\n";
-        let result = Lexer::tokenize(input, IndentKind::Tab)[1];
+        let result = Lexer::tokenize_source_code(input, IndentKind::Tab)[1];
 
         assert_eq!(TokenKind::Dedent, result.kind);
     }
@@ -271,7 +275,7 @@ mod tests {
     #[test]
     fn tokenizes_double_dedent_using_tabs() {
         let input = "\n\t\t\n\n";
-        let result = Lexer::tokenize(input, IndentKind::Tab);
+        let result = Lexer::tokenize_source_code(input, IndentKind::Tab);
 
         assert_eq!(TokenKind::Dedent, result[2].kind);
         assert_eq!(TokenKind::Dedent, result[3].kind);
@@ -280,7 +284,7 @@ mod tests {
     #[test]
     fn tokenizes_mixed_indentation_tabs_when_expected_spaces() {
         let input = "\n\t\n";
-        let result = Lexer::tokenize(input, IndentKind::Spaces(2))[1];
+        let result = Lexer::tokenize_source_code(input, IndentKind::Spaces(2))[1];
 
         assert_eq!(TokenKind::MixedIndentation, result.kind);
     }
@@ -288,7 +292,7 @@ mod tests {
     #[test]
     fn tokenizes_mixed_indentation_spaces_when_expected_tabs() {
         let input = "\n  \n";
-        let result = Lexer::tokenize(input, IndentKind::Tab)[1];
+        let result = Lexer::tokenize_source_code(input, IndentKind::Tab)[1];
 
         assert_eq!(TokenKind::MixedIndentation, result.kind);
     }
@@ -296,7 +300,7 @@ mod tests {
     #[test]
     fn tokenizes_invalid_indentation() {
         let input = "\n   \n";
-        let result = Lexer::tokenize(input, IndentKind::Spaces(2))[1];
+        let result = Lexer::tokenize_source_code(input, IndentKind::Spaces(2))[1];
 
         assert_eq!(TokenKind::InvalidIndentation, result.kind);
     }
@@ -304,23 +308,23 @@ mod tests {
     #[test]
     fn tokenizes_integer() {
         let input = "1234";
-        let result = Lexer::tokenize(input, IndentKind::Tab)[0];
+        let result = Lexer::tokenize_source_code(input, IndentKind::Tab)[0];
 
         assert_eq!(TokenKind::Integer, result.kind);
-        assert_eq!(input.len(), result.span.1 - result.span.0);
+        assert_eq!(input.len(), result.span.len());
     }
 
     #[test]
     fn tokenizes_short_operator() {
         let input = "=";
-        let result = Lexer::tokenize(input, IndentKind::Tab)[0];
+        let result = Lexer::tokenize_source_code(input, IndentKind::Tab)[0];
 
         assert_eq!(TokenKind::Equal, result.kind)
     }
     #[test]
     fn tokenizes_invalid() {
         let input = "@";
-        let result = Lexer::tokenize(input, IndentKind::Tab)[0];
+        let result = Lexer::tokenize_source_code(input, IndentKind::Tab)[0];
 
         assert_eq!(TokenKind::Invalid, result.kind);
     }

@@ -1,4 +1,4 @@
-use crate::IndentKind;
+use crate::source_file::IndentKind;
 
 pub mod lexer;
 pub mod parse_session;
@@ -13,7 +13,7 @@ pub fn find_mixed_and_invalid_indentations(session: &mut ParseSession, tokens: &
     for token in tokens {
         match token.kind {
             TokenKind::MixedIndentation => {
-                if let IndentKind::Spaces(spaces_per_indent) = session.indent_kind() {
+                if let IndentKind::Spaces(spaces_per_indent) = session.source_file.indent_kind {
                     session.error(
                         token.span,
                         format!(
@@ -29,13 +29,13 @@ pub fn find_mixed_and_invalid_indentations(session: &mut ParseSession, tokens: &
                 }
             }
             TokenKind::InvalidIndentation => {
-                if let IndentKind::Spaces(spaces_per_indent) = session.indent_kind() {
+                if let IndentKind::Spaces(spaces_per_indent) = session.source_file.indent_kind {
                     session.error(
                         token.span,
                         format!(
                             "invalid number of spaces in indentation: expected {}, but found {}",
                             spaces_per_indent,
-                            token.span.1 - token.span.0
+                            token.span.len(),
                         ),
                     );
                 } else {

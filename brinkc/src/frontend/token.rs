@@ -1,16 +1,18 @@
+use crate::source_file::SourceSpan;
+
 /// Represents a single atomic unit of a language grammar.
 #[derive(Copy, Clone, Debug)]
 pub struct Token {
     pub kind: TokenKind,
     /// Start (inclusive) and end (exclusive) byte positions in source code.
-    pub span: (usize, usize),
+    pub span: SourceSpan,
 }
 
 impl Token {
     pub fn with_length(kind: TokenKind, start: usize, length: usize) -> Self {
         Self {
             kind,
-            span: (start, start + length),
+            span: SourceSpan::from_length(start, length),
         }
     }
 }
