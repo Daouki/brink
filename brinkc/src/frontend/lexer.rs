@@ -2,7 +2,10 @@ use std::{iter::Peekable, str::CharIndices};
 
 use crate::source_file::{IndentKind, SourceFile};
 
-use super::token::{self, Token, TokenKind};
+use super::{
+    token::{self, Token, TokenKind},
+    tokens::Tokens,
+};
 
 macro_rules! tokenize_operator {
     ($lexer:ident, $start:ident, $c:ident, $short_lexeme:literal, $short_kind:ident) => {
@@ -24,8 +27,11 @@ pub struct Lexer<'a> {
 
 impl<'a> Lexer<'a> {
     /// Turns the given source code into a sequence of tokens.
-    pub fn tokenize(source_file: &'a SourceFile) -> Vec<Token> {
-        Self::tokenize_source_code(&source_file.source_code, source_file.indent_kind)
+    pub fn tokenize(source_file: &'a SourceFile) -> Tokens {
+        Tokens::new(Self::tokenize_source_code(
+            &source_file.source_code,
+            source_file.indent_kind,
+        ))
     }
 
     pub fn tokenize_source_code(source_code: &'a str, indent_kind: IndentKind) -> Vec<Token> {

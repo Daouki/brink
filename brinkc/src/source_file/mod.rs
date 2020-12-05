@@ -29,6 +29,10 @@ impl SourceFile {
             indent_kind,
         })
     }
+
+    pub fn read_span(&self, span: SourceSpan) -> &str {
+        &self.source_code[span.start..span.end]
+    }
 }
 
 /// Holds information about the character sequence used to denote a block

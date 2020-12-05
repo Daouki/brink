@@ -2,10 +2,13 @@
 
 use std::time::Instant;
 
+mod ast;
 mod frontend;
 mod source_file;
 
-use frontend::{find_mixed_and_invalid_indentations, lexer::Lexer, parse_session::ParseSession};
+use frontend::{
+    find_mixed_and_invalid_indentations, lexer::Lexer, parse_session::ParseSession, parser::Parser,
+};
 use source_file::SourceFile;
 
 fn main() {
@@ -34,14 +37,11 @@ fn main() {
         terminate_compilation(start_time, &parse_session, 1);
     }
 
+    let abstract_syntax_tree = Parser::parse(&parse_session, tokens);
+
     #[cfg(debug_assertions)]
     {
-        for (index, token) in tokens.into_iter().enumerate() {
-            println!(
-                "{:>4}\t({}-{})\t\t{:?}",
-                index, token.span.start, token.span.end, token.kind
-            )
-        }
+        println!("{:#?}", abstract_syntax_tree);
         println!();
     }
 
