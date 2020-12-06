@@ -26,6 +26,7 @@ impl ParseSession {
         println!();
     }
 
+    #[allow(dead_code)]
     pub fn warning<S: AsRef<str>>(&mut self, span: SourceSpan, message: S) {
         self.error_count += 1;
 

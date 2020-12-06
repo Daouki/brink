@@ -1,20 +1,27 @@
+use node_id::NodeId;
+
 use crate::source_file::SourceSpan;
+
+pub mod node_id;
 
 #[derive(Debug)]
 pub struct Program {
+    pub id: NodeId,
     pub body: Vec<Item>,
 }
 
 #[derive(Debug)]
 pub struct Block {
-    pub items: Vec<Item>,
+    pub id: NodeId,
     pub span: SourceSpan,
+    pub items: Vec<Item>,
 }
 
 #[derive(Debug)]
 pub struct Item {
-    pub kind: ItemKind,
+    pub id: NodeId,
     pub span: SourceSpan,
+    pub kind: ItemKind,
 }
 
 #[derive(Debug)]
@@ -25,9 +32,10 @@ pub enum ItemKind {
 
 #[derive(Debug)]
 pub struct LetBinding {
+    pub id: NodeId,
+    pub span: SourceSpan,
     pub identifier: Literal,
     pub body: LetBody,
-    pub span: SourceSpan,
 }
 
 #[derive(Debug)]
@@ -38,8 +46,9 @@ pub enum LetBody {
 
 #[derive(Debug)]
 pub struct Expr {
-    pub kind: ExprKind,
+    pub id: NodeId,
     pub span: SourceSpan,
+    pub kind: ExprKind,
 }
 
 #[derive(Debug)]
@@ -49,8 +58,9 @@ pub enum ExprKind {
 
 #[derive(Debug)]
 pub struct Literal {
-    pub kind: LiteralKind,
+    pub id: NodeId,
     pub span: SourceSpan,
+    pub kind: LiteralKind,
 }
 
 #[derive(Debug)]

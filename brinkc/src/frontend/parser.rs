@@ -1,5 +1,5 @@
 use crate::{
-    ast::{self, ItemKind},
+    ast::{self, node_id::NodeIdGenerator},
     source_file::SourceSpan,
 };
 
@@ -9,14 +9,20 @@ use super::{
     tokens::Tokens,
 };
 
+#[allow(dead_code)]
 pub struct Parser<'a> {
     session: &'a ParseSession,
     tokens: Tokens,
+    id_generator: NodeIdGenerator,
 }
 
 impl<'a> Parser<'a> {
     pub fn parse(session: &'a ParseSession, tokens: Tokens) -> ast::Program {
-        let mut parser = Self { session, tokens };
+        let mut parser = Self {
+            session,
+            tokens,
+            id_generator: NodeIdGenerator::new(),
+        };
         parser.parse_program()
     }
 
@@ -25,7 +31,10 @@ impl<'a> Parser<'a> {
         while !self.tokens.at_end() {
             body.push(self.parse_item().unwrap());
         }
-        ast::Program { body }
+        ast::Program {
+            id: self.id_generator.next_id(),
+            body,
+        }
     }
 
     fn parse_block(&mut self) -> Result<ast::Block, ParseError> {
@@ -36,7 +45,11 @@ impl<'a> Parser<'a> {
         }
         let _ = self.tokens.consume(TokenKind::Dedent);
         let span = SourceSpan::new(start, self.tokens.previous().span.end);
-        Ok(ast::Block { items, span })
+        Ok(ast::Block {
+            id: self.id_generator.next_id(),
+            span,
+            items,
+        })
     }
 
     fn parse_item(&mut self) -> Result<ast::Item, ParseError> {
@@ -44,15 +57,17 @@ impl<'a> Parser<'a> {
             let let_binding = self.parse_let_binding()?;
             let span = let_binding.span.clone();
             Ok(ast::Item {
-                kind: ItemKind::LetBinding(let_binding),
+                id: self.id_generator.next_id(),
                 span,
+                kind: ast::ItemKind::LetBinding(let_binding),
             })
         } else {
             let expr = self.parse_expr()?;
             let span = expr.span.clone();
             Ok(ast::Item {
-                kind: ItemKind::Expr(expr),
+                id: self.id_generator.next_id(),
                 span,
+                kind: ast::ItemKind::Expr(expr),
             })
         }
     }
@@ -64,9 +79,10 @@ impl<'a> Parser<'a> {
         let body = self.parse_let_binding_body()?;
         let span = SourceSpan::new(start, self.tokens.previous().span.end);
         Ok(ast::LetBinding {
+            id: self.id_generator.next_id(),
+            span,
             identifier,
             body,
-            span,
         })
     }
 
@@ -88,11 +104,13 @@ impl<'a> Parser<'a> {
         if self.tokens.check(TokenKind::Integer) {
             let token = self.tokens.consume(TokenKind::Integer).unwrap();
             Ok(ast::Expr {
-                kind: ast::ExprKind::Literal(ast::Literal {
-                    kind: ast::LiteralKind::Integer,
-                    span: token.span,
-                }),
+                id: self.id_generator.next_id(),
                 span: token.span,
+                kind: ast::ExprKind::Literal(ast::Literal {
+                    id: self.id_generator.next_id(),
+                    span: token.span,
+                    kind: ast::LiteralKind::Integer,
+                }),
             })
         } else {
             let current = self.tokens.peek();
@@ -118,8 +136,9 @@ impl<'a> Parser<'a> {
     fn expect_identifier(&mut self) -> Result<ast::Literal, ParseError> {
         if let Some(token) = self.tokens.consume(TokenKind::Identifier) {
             Ok(ast::Literal {
-                kind: ast::LiteralKind::Identifier,
+                id: self.id_generator.next_id(),
                 span: token.span,
+                kind: ast::LiteralKind::Identifier,
             })
         } else {
             let current = self.tokens.peek();

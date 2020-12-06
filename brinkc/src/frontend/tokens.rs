@@ -32,16 +32,6 @@ impl Tokens {
         self.tokens[self.position - 1]
     }
 
-    /// Gets the current token and advances to the next one.
-    pub fn advance(&mut self) -> Token {
-        if self.tokens[self.position].kind != TokenKind::EndOfFile {
-            self.position += 1;
-            self.tokens[self.position - 1]
-        } else {
-            self.tokens[self.position]
-        }
-    }
-
     pub fn check(&mut self, kind: TokenKind) -> bool {
         println!("checking {:?}", kind);
         self.tokens[self.position].kind == kind

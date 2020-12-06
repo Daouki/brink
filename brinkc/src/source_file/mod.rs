@@ -30,6 +30,7 @@ impl SourceFile {
         })
     }
 
+    #[allow(dead_code)]
     pub fn read_span(&self, span: SourceSpan) -> &str {
         &self.source_code[span.start..span.end]
     }
